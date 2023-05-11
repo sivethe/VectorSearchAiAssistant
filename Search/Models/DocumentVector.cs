@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Search.Models
+﻿namespace Search.Models
 {
+    using MongoDB.Bson;
+    using MongoDB.Bson.Serialization.Attributes;
+
     public record DocumentVector
     {
+        [BsonId]
+        [BsonRepresentation(BsonType.String)]
         public string id { get; set; }
         public string itemId { get; set; }
         public string partitionKey { get; set; }

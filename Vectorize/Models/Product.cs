@@ -1,11 +1,23 @@
 ﻿namespace Vectorize.Models
 {
+    using MongoDB.Bson;
+    using MongoDB.Bson.Serialization.Attributes;
+
     public class Product
     {
+        [BsonId]
+        [BsonRepresentation(BsonType.String)]
         public string id { get; set; }
+
+        [BsonRepresentation(BsonType.String)]
         public string categoryId { get; set; }
+
+        [BsonRepresentation(BsonType.String)]
         public string categoryName { get; set; }
+
+        [BsonRepresentation(BsonType.String)]
         public string sku { get; set; }
+        
         public string name { get; set; }
         public string description { get; set; }
         public double price { get; set; }

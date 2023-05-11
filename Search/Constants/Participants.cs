@@ -1,7 +1,8 @@
-namespace Search.Constants;
-
-public enum Participants
+namespace Search.Constants
 {
-    User = 0,
-    Assistant
+    public enum Participants
+    {
+        User = 0,
+        Assistant
+    }
 }

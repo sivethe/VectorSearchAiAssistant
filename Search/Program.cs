@@ -96,6 +96,23 @@ static class ProgramExtensions
                 );
             }
         });
+        services.AddSingleton<MongoDbService, MongoDbService>((provider) =>
+        {
+            var mongoDbOptions = provider.GetRequiredService<IOptions<MongoDb>>();
+            if (mongoDbOptions is null)
+            {
+                throw new ArgumentException($"{nameof(IOptions<MongoDb>)} was not resolved through dependency injection.");
+            }
+            else
+            {
+                return new MongoDbService(
+                    connection: mongoDbOptions.Value?.Connection ?? String.Empty,
+                    databaseName: mongoDbOptions.Value?.DatabaseName ?? String.Empty,
+                    collectionName: mongoDbOptions.Value?.CollectionName ?? String.Empty,
+                    logger: provider.GetRequiredService<ILogger<RedisService>>()
+                );
+            }
+        });
         services.AddSingleton<ChatService>();
     }
 }

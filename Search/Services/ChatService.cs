@@ -13,14 +13,14 @@ public class ChatService
 
     private readonly CosmosDbService _cosmosDbService;
     private readonly OpenAiService _openAiService;
-    private readonly RedisService _redisService;
+    private readonly MongoDbService _mongoDbService;
     private readonly int _maxConversationBytes;
 
-    public ChatService(CosmosDbService cosmosDbService, OpenAiService openAiService, RedisService redisService)
+    public ChatService(CosmosDbService cosmosDbService, OpenAiService openAiService, MongoDbService mongoDbService)
     {
         _cosmosDbService = cosmosDbService;
         _openAiService = openAiService;
-        _redisService = redisService;
+        _mongoDbService = mongoDbService;
 
         _maxConversationBytes = openAiService.MaxConversationBytes;
 
@@ -121,21 +121,16 @@ public class ChatService
         //Get embeddings for user prompt.
         (float[] promptVectors, int vectorTokens) = await _openAiService.GetEmbeddingsAsync(sessionId, conversation);
 
-        //Do vector search on prompt embeddings, return list of documents to go fetch
-        List<DocumentVector> vectorSearchResults =  await _redisService.VectorSearchAsync(promptVectors);
-
-        //Get the documents from Cosmos DB
-        string retrievedDocuments = await _cosmosDbService.GetVectorSearchDocumentsAsync(vectorSearchResults);
+        //Do vector search on prompt embeddings, return list of documents
+        string retrievedDocuments =  await _mongoDbService.VectorSearchAsync(promptVectors);
 
         //Generate the completion to return to the user
         (string completion, int promptTokens, int responseTokens) = await _openAiService.GetChatCompletionAsync(sessionId, conversation, retrievedDocuments);
 
-
         //Add to prompt and completion to cache, then persist in Cosmos as transaction 
         Message promptMessage = new Message(sessionId, nameof(Participants.User), promptTokens, userPrompt);
-        Message completionMessage = new Message(sessionId, nameof(Participants.Assistant), responseTokens, completion);        
+        Message completionMessage = new Message(sessionId, nameof(Participants.Assistant), responseTokens, completion);
         await AddPromptCompletionMessagesAsync(sessionId, promptMessage, completionMessage);
-
 
         return completion;
     }
@@ -145,29 +140,18 @@ public class ChatService
     /// </summary>
     private string GetChatSessionConversation(string sessionId, string userPrompt)
     {
-
         int? bytesUsed = 0;
-
         List<string> conversationBuilder = new List<string>();
-
-
         int index = _sessions.FindIndex(s => s.SessionId == sessionId);
-
-
+        
         List<Message> messages = _sessions[index].Messages;
-
         //Start at the end of the list and work backwards
         for (int i = messages.Count - 1; i >= 0; i--)
         {
-
             bytesUsed += messages[i].Text.Length;
-
             if (bytesUsed > _maxConversationBytes)
                 break;
-
-            
             conversationBuilder.Add(messages[i].Text);
-
         }
 
         //Invert the chat messages to put back into chronological order and output as string.        
@@ -175,10 +159,7 @@ public class ChatService
 
         //Add the current userPrompt
         conversation += Environment.NewLine + userPrompt;
-
         return conversation;
-
-
     }
 
     public async Task<string> SummarizeChatSessionNameAsync(string? sessionId, string prompt)

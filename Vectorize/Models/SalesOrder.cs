@@ -1,7 +1,12 @@
 ﻿namespace Vectorize.Models
 {
+    using MongoDB.Bson;
+    using MongoDB.Bson.Serialization.Attributes;
+
     public class SalesOrder
     {
+        [BsonId]
+        [BsonRepresentation(BsonType.String)]
         public string id { get; set; }
         public string type { get; set; }
         public string customerId { get; set; }

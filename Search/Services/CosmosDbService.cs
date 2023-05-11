@@ -247,6 +247,4 @@ public class CosmosDbService
         return resultDocuments;
         
     }
-
-
 }
