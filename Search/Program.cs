@@ -38,8 +38,8 @@ static class ProgramExtensions
         builder.Services.AddOptions<OpenAi>()
             .Bind(builder.Configuration.GetSection(nameof(OpenAi)));
 
-        builder.Services.AddOptions<Redis>()
-            .Bind(builder.Configuration.GetSection(nameof(Redis)));
+        builder.Services.AddOptions<MongoDb>()
+            .Bind(builder.Configuration.GetSection(nameof(MongoDb)));
     }
 
     public static void RegisterServices(this IServiceCollection services)
@@ -81,21 +81,6 @@ static class ProgramExtensions
                 );
             }
         });
-        services.AddSingleton<RedisService, RedisService>((provider) =>
-        {
-            var redisOptions = provider.GetRequiredService<IOptions<Redis>>();
-            if (redisOptions is null)
-            {
-                throw new ArgumentException($"{nameof(IOptions<Redis>)} was not resolved through dependency injection.");
-            }
-            else
-            {
-                return new RedisService(
-                    connection: redisOptions.Value?.Connection ?? String.Empty,
-                    logger: provider.GetRequiredService<ILogger<RedisService>>()
-                );
-            }
-        });
         services.AddSingleton<MongoDbService, MongoDbService>((provider) =>
         {
             var mongoDbOptions = provider.GetRequiredService<IOptions<MongoDb>>();
@@ -109,7 +94,7 @@ static class ProgramExtensions
                     connection: mongoDbOptions.Value?.Connection ?? String.Empty,
                     databaseName: mongoDbOptions.Value?.DatabaseName ?? String.Empty,
                     collectionName: mongoDbOptions.Value?.CollectionName ?? String.Empty,
-                    logger: provider.GetRequiredService<ILogger<RedisService>>()
+                    logger: provider.GetRequiredService<ILogger<MongoDbService>>()
                 );
             }
         });
