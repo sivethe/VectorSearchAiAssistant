@@ -20,6 +20,7 @@ namespace Vectorize.Services
             _client = new MongoClient(connection);
             _database = _client.GetDatabase(databaseName);
             _collection = _database.GetCollection<BsonDocument>(collectionName);
+            _logger = logger;
             
             //Find if vector index exists
             using (IAsyncCursor<BsonDocument> indexCursor = _collection.Indexes.List())
@@ -27,13 +28,14 @@ namespace Vectorize.Services
                 bool vectorIndexExists = indexCursor.ToList().Any(x => x["name"] == "vectorSearchIndex");
                 if (!vectorIndexExists)                
                 {
+                    logger.LogInformation("Creating vector index");
                     BsonDocumentCommand<BsonDocument> command = new BsonDocumentCommand<BsonDocument>(
                     BsonDocument.Parse(@"
                         { createIndexes: 'vectors', 
                           indexes: [{ 
                             name: 'vectorSearchIndex', 
                             key: { vector: 'cosmosSearch' }, 
-                            cosmosSearchOptions: { kind: 'vector-ivf', numLists: 5, similarity: 'COS', dimensions: 3 } 
+                            cosmosSearchOptions: { kind: 'vector-ivf', numLists: 5, similarity: 'COS', dimensions: 1536 } 
                           }] 
                         }"));
 
@@ -49,42 +51,26 @@ namespace Vectorize.Services
         
         public async Task InsertVector(BsonDocument document)
         {
+            if (!document.Contains("_id"))
+            {
+                _logger.LogError("Document does not contain _id.");
+                throw new ArgumentException("Document does not contain _id.");
+            }
+
+            string? _idValue =  document.GetValue("_id").ToString();
 
             try 
             {
-
-                await _collection.InsertOneAsync(document);
-
+                var filter = Builders<BsonDocument>.Filter.Eq("_id", _idValue);
+                var options = new ReplaceOptions { IsUpsert = true };
+                await _collection.ReplaceOneAsync(filter, document, options);
             }
             catch (Exception ex) 
             {
+                //TODO: fix the logger. Output does not show up anywhere
                 _logger.LogError(ex.Message);
             }
-
         }
-
-
-        public async Task UpsertVector(BsonDocument document)
-        {
-
-            throw new Exception("not implemented");
-
-            /*
-            try
-            {
-
-                var filter = Builders<MyDocument>.Filter.Eq(x => x.Id, myId);
-                var options = new ReplaceOptions { IsUpsert = true };
-                await _collection.ReplaceOne(filter, newDocument, options);
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.Message);
-            }
-            */
-        }
-
     }
 
     public class JsonToBsonSerializer : SerializerBase<dynamic>

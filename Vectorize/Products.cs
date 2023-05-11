@@ -4,8 +4,6 @@ using Newtonsoft.Json.Linq;
 using Vectorize.Services;
 using Vectorize.Models;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.IO;
 
 namespace Vectorize
 {
@@ -54,16 +52,10 @@ namespace Vectorize
             //Serialize the product object to send to OpenAI
             string sProduct = JObject.FromObject(product).ToString();
 
-            
             try
             {
                 //Get the embeddings from OpenAI
                 product.vector = await _openAI.GetEmbeddingsAsync(sProduct);
-
-
-                var bson = new BsonDocument();
-                var bsonSettings = new BsonDocumentWriterSettings { GuidRepresentation = GuidRepresentation.Standard };
-                var args = new BsonSerializationArgs { NominalType = typeof(Product) };
 
                 //Save to Mongo
                 BsonDocument bsonProduct = product.ToBsonDocument();
