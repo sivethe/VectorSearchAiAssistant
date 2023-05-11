@@ -45,8 +45,10 @@ namespace Vectorize
                     if (item.type == "customer")
                         await GenerateCustomerVectors(item, logger);
                     else
-                        await GenerateSalesOrderVectors(item, logger);
-
+                    {
+                        SalesOrder order = (item as JObject).ToObject<SalesOrder>();
+                        await GenerateSalesOrderVectors(order, logger);
+                    }
                 }
                 
             }
@@ -62,11 +64,9 @@ namespace Vectorize
                 //Get the embeddings from OpenAI
                 customer.vector = await _openAi.GetEmbeddingsAsync(sDocument);
 
-
                 //Save to Mongo
                 BsonDocument bsonCustomer = customer.ToBsonDocument();
                 await _mongo.InsertVector(bsonCustomer);
-
 
                 logger.LogInformation($"Saved vector for customer: {customer.firstName} {customer.lastName} ");
 

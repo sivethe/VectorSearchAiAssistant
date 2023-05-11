@@ -40,17 +40,19 @@
             _collection = _database.GetCollection<BsonDocument>(collectionName);
         }
 
-        public async Task<string> VectorSearchAsync(float[] embeddings, int maxResults = 100)
+        public async Task<string> VectorSearchAsync(float[] embeddings, int maxResults = 5)
         {
             List<string> retDocs = new List<string>();
-            var memory = new ReadOnlyMemory<float>(embeddings);
 
             //Search Mongo vCore collection for similar embeddings
+            //Project the fields that are needed
             BsonDocument[] pipeline = new BsonDocument[]
             {
                 BsonDocument.Parse($"{{$search: {{cosmosSearch: {{ vector: [{string.Join(',', embeddings)}], path: 'vector', k: {maxResults}}}, returnStoredSource:true}}}}"),
+                BsonDocument.Parse($"{{$project: {{_id: 0, vector: 0}}}}"),
             };
 
+            // Combine the results into a single string
             List<BsonDocument> result = await _collection.Aggregate<BsonDocument>(pipeline).ToListAsync();
             string resultDocuments = string.Join(Environment.NewLine + "-", result.Select(x => x.ToJson()));
             return resultDocuments;
