@@ -65,10 +65,8 @@ namespace Vectorize
                 var bsonSettings = new BsonDocumentWriterSettings { GuidRepresentation = GuidRepresentation.Standard };
                 var args = new BsonSerializationArgs { NominalType = typeof(Product) };
 
-                
-
                 //Save to Mongo
-                //BsonDocument bsonProduct = product.ToBsonDocument();
+                BsonDocument bsonProduct = product.ToBsonDocument();
                 await _mongo.InsertVector(bsonProduct);
 
                 logger.LogInformation("Saved vector for product: " + product.name);
